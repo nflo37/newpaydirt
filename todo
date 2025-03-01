@@ -1,0 +1,8 @@
+Core game engine
+  Create game logic. Implement rules and game state
+
+Render visual representation of game using pygame
+
+Input handling for processing user input
+
+Ai system for playing against computer?
