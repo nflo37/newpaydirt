@@ -1,8 +1,23 @@
 Core game engine
   Create game logic. Implement rules and game state
+    Start phase
+        PICKUP AT setup_kickoff()
+    Pre-play phase
+    evaluate play results phase
+    post play phase
 
 Render visual representation of game using pygame
 
 Input handling for processing user input
 
 Ai system for playing against computer?
+
+
+
+
+DONE:
+Creation of playsheet as yaml file
+Playsheet class to load playsheet
+Team class to create team
+Game class (still work to be done) to run game logic
+User selection of team based on available playsheets
