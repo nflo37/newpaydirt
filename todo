@@ -1,9 +1,9 @@
 Core game engine
   Create game logic. Implement rules and game state
     Start phase
-        PICKUP AT setup_kickoff()
     Pre-play phase
     evaluate play results phase
+       TODO pickup here
     post play phase
 
 Render visual representation of game using pygame
@@ -21,3 +21,4 @@ Playsheet class to load playsheet
 Team class to create team
 Game class (still work to be done) to run game logic
 User selection of team based on available playsheets
+
