@@ -3,8 +3,15 @@ Core game engine
     Start phase
     Pre-play phase
     evaluate play results phase
-       TODO pickup here
     post play phase
+
+    TOOD: Add ability for special teams to be selected
+          Add end of quarter/game logic
+          Add ability to call timeouts
+          Add incomplete passes, penalties, breakaway, quarterback trapped and adjust game logic accordingly
+          
+          ?? I am not sure I am using play_state as well as game.possesion properly, are both needed ??
+
 
 Render visual representation of game using pygame
 
@@ -21,4 +28,5 @@ Playsheet class to load playsheet
 Team class to create team
 Game class (still work to be done) to run game logic
 User selection of team based on available playsheets
+Play selection on offense and evaluation of play with updated game state
 
