@@ -12,7 +12,8 @@ class Playsheet:
     
     def __init__(self, yaml_file):
 
-        yaml_file_path = f"/home/nickflo/newpaydirt/playsheets/{yaml_file}"
+        #yaml_file_path = f"/home/nickflo/newpaydirt/playsheets/{yaml_file}"
+        yaml_file_path = f"./playsheets/{yaml_file}"
     
         with open(yaml_file_path, 'r') as f:
             self.yaml_data = yaml.safe_load(f)
@@ -213,7 +214,7 @@ class Game:
         if self.play_state == "kickoff":
             if self.possession == self.user_team:
                 plays = Game.KICKOFF_RETURN_PLAYS
-            elif self.possession == self.comp_team
+            elif self.possession == self.comp_team:
                 plays = Game.KICKOFF_PLAYS
 
             for index,play in enumerate(plays):
@@ -420,7 +421,7 @@ class Game:
         self.seconds = self.seconds - time_elapsed
     
     def update_game_score(self, points):
-        self.possesion.score = self.possesion.score + points
+        self.possession.score = self.possession.score + points
 
     def update_ball_position(self, result):
         if self.direction == "right":
