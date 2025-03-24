@@ -30,3 +30,47 @@ Game class (still work to be done) to run game logic
 User selection of team based on available playsheets
 Play selection on offense and evaluation of play with updated game state
 
+
+
+
+SITUATIONS WORKING:
+
+    User standard offense plays
+    User Scoring a touchdown
+    User Scoring an XP
+
+    User Turnover on downs 
+
+
+SITUATIONS FIX:
+    Comp Touchdown and goes for 2
+
+    Computer scores and kicks XP
+
+    Comp scores and this (no play to select for user on defense)...
+      Did a FG or XP happen?
+        atlanta_falcons selected Standard
+        dallas_cowboys selected End Run
+        atlanta_falcons rolled a 3 for 0 yards
+        dallas_cowboys rolled a 34 for 15 yards
+        dallas_cowboys gained 15 yards
+        Touchdown dallas_cowboys!!!!!
+        SCORE:    atlanta_falcons: 3 - dallas_cowboys: 6
+        Timeouts  atlanta_falcons: 3   dallas_cowboys: 3
+        Time Remaining: 6:20
+        0 and 0 on the 2 
+
+Enter a valid number
+
+
+
+    Punting logic 
+
+
+    Tricky:
+        Determine when computer should select field goal/punt
+
+    
+
+
+

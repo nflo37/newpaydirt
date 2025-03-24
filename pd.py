@@ -59,6 +59,7 @@ class Game:
                       "Short Pass", "Medium Pass", "Long", "Sideline"]
     SP_OFFENSE_PLAYS = ["Field Goal", "Punt"]
     DEFENSE_PLAYS  = ["Standard", "Nickel", "Dime", "Prevent", "Blitz"]
+    POST_TD_PLAYS = ["2pt Attempt", "XP"]
 
     def __init__(self):
         #Initial game state is for kickoff
@@ -158,21 +159,14 @@ class Game:
         return playsheets[num]
 
     def setup_kickoff(self):
-        """
-        kickoff placement depends on direction of game. 
-        Assuming always going left to right
-
-        Whoever does not have possession kicks off
-        Ball starts on -15 yard line (35 yd line left to right)
-        Down is 0 
-
-        Should we indicate that the game is in a special teams state??
-        How to indicate that special teams playsheet sections will need to be used
-        """
         
-        self.ball_position = -15
+        if self.direction == "right":
+            self.ball_position = -15
+        else:
+            self.ball_position = 15
+
         self.down = 0
-        self.yards = 0
+        self.distance = 0
         self.play_state = "kickoff"
 
 
@@ -219,23 +213,60 @@ class Game:
 
             for index,play in enumerate(plays):
                 play_choices = play_choices + f"[{index}]: {play}\n"
-                num_plays = len(plays)
-                comp_play = "Kickoff Return"
+            comp_play = "Kickoff Return"
 
         elif self.play_state == "offense":
             plays = Game.OFFENSE_PLAYS + Game.SP_OFFENSE_PLAYS
             for index,play in enumerate(plays):
                 play_choices = play_choices + f"[{index}]: {play}\n"
-                num_plays = len(plays)
-                comp_play = random.choice(Game.DEFENSE_PLAYS)
+            comp_play = random.choice(Game.DEFENSE_PLAYS)
 
         elif self.play_state == "defense":
             plays = Game.DEFENSE_PLAYS
             for index,play in enumerate(plays):
                 play_choices = play_choices + f"[{index}]: {play}\n"
-                num_plays = len(plays)
-                comp_play = random.choice(Game.OFFENSE_PLAYS)
+            comp_play = random.choice(Game.OFFENSE_PLAYS)
+
+        elif self.play_state == "post_touchdown":
+            if self.possession == self.user_team:
+                plays = Game.POST_TD_PLAYS
+                for index,play in enumerate(plays):
+                    play_choices = play_choices + f"[{index}]: {play}\n"
+                comp_play = "Field Goal"
+            elif self.possession == self.comp_team:
+                comp_play = random.choice(Game.POST_TD_PLAYS)
+                if comp_play == "XP":
+                    self.play_state = "XP"
+                    plays = "Field Goal"
+                    self.user_team.selected_play = "Field Goal"
+                    self.comp_team.selected_play = "Field Goal"
+                elif comp_play == "2pt Attempt":
+                    self.play_state = "2pt Attempt"
+                    print(f"{self.possession.name} are going for 2")
+                    plays =  Game.DEFENSE_PLAYS
+                    for index,play in enumerate(plays):
+                        play_choices = play_choices + f"[{index}]: {play}\n"
+                    comp_play = random.choice(Game.OFFENSE_PLAYS)
+                #We need to know if comp is going for 1 or 2 to be able to select a play
             
+        user_play = self.user_play_selection(play_choices, plays)
+        user_play, comp_play = self.check_post_td_play(play_choices, plays,  user_play, comp_play)
+        user_play, comp_play = self.check_for_field_goal(user_play, comp_play)
+
+        self.user_team.selected_play = user_play
+        self.comp_team.selected_play = comp_play
+
+
+    def check_for_field_goal(self, user_play, comp_play):
+        if user_play == "Field Goal":
+            comp_play = "Field Goal"
+            self.play_state = "Field Goal"
+
+        return user_play, comp_play
+
+    def user_play_selection(self, play_choices, plays):
+
+        num_plays = len(plays)
         while True:
             user_input = input(play_choices)
             try:
@@ -246,11 +277,29 @@ class Game:
             except ValueError:
                 print("Enter a valid number")
 
-        user_play = plays[num]
+        selected_play = plays[num]
 
-        #return user_play, comp_play
-        self.user_team.selected_play = user_play
-        self.comp_team.selected_play = comp_play
+        return selected_play
+
+
+    def check_post_td_play(self, play_choices, plays, user_play, comp_play=False):
+        #We have to convert the play selection to actual playsheet play
+        if user_play == "XP":
+            user_play = "Field Goal"
+            self.play_state = "XP"
+        elif user_play == "2pt Attempt":
+            #Allow user to select an offensive play if they go for 2
+            self.play_state = "2pt Attempt"
+            plays = Game.OFFENSE_PLAYS
+            play_choices = ""
+            for index,play in enumerate(plays):
+                play_choices = play_choices + f"[{index}]: {play}\n"
+            comp_play = random.choice(Game.DEFENSE_PLAYS)
+
+            user_play = self.user_play_selection(play_choices, plays)
+        
+        return user_play, comp_play
+
 
     
     def evaluate_play_phase(self):
@@ -269,14 +318,33 @@ class Game:
 
         #TODO check for all non-yardage scenarios (need to add these to playsheet) 
         #Need to handle special roll for if user/comp is on defense
-        if self.play_state == "offense":
-            user_roll = random.choice(list(user_play_outcomes.items()))  #[play, yardage]?
-            comp_roll = random.choice(list(comp_play_outcomes[self.user_team.selected_play].items()))
+        if self.play_state == "offense" or self.play_state == "2pt Attempt":
+            #Check for if computer is going for 2
+            if self.possession == self.comp_team:
+                user_roll = random.choice(list(user_play_outcomes[self.comp_team.selected_play].items()))
+                comp_roll = random.choice(list(comp_play_outcomes.items()))
+            else:
+                user_roll = random.choice(list(user_play_outcomes.items()))  #[play, yardage]?
+                comp_roll = random.choice(list(comp_play_outcomes[self.user_team.selected_play].items()))
         elif self.play_state == "defense":
-            user_roll = random.choice(list(user_play_outcomes[self.comp_team.selected_play].items()))  #[play, yardage]?
+            user_roll = random.choice(list(user_play_outcomes[self.comp_team.selected_play].items()))
             comp_roll = random.choice(list(comp_play_outcomes.items()))
+        elif self.play_state == "Field Goal":
+            if self.possession == self.user_team:
+                user_roll = random.choice(list(user_play_outcomes.items()))  #[play, yardage]?
+                comp_roll = [1, 0]
+            else:
+                comp_roll = random.choice(list(user_play_outcomes.items()))  #[play, yardage]?
+                user_roll = [1, 0]
+        elif self.play_state == "XP":
+            if self.possession == self.user_team:
+                user_roll = random.choice(list(user_play_outcomes.items()))
+                comp_roll = [1, 30]     #XP = FG-30yds 
+            else:
+                comp_roll = random.choice(list(user_play_outcomes.items()))
+                user_roll = [1, 30]     #XP = FG-30yds 
         else:
-            user_roll = random.choice(list(user_play_outcomes.items()))  #[play, yardage]?
+            user_roll = random.choice(list(user_play_outcomes.items()))
             comp_roll = random.choice(list(comp_play_outcomes.items()))
 
         user_roll_num = user_roll[0]
@@ -295,14 +363,21 @@ class Game:
         #result = abs(user_result - comp_result)
 
         if self.play_state == "kickoff":
-            result = user_result - comp_result
+            if self.possession == self.user_team:
+                result = comp_result - user_result
+            else:
+                result = user_result - comp_result
             result_string = f"Kickoff: Net {result} yards"
-        elif self.play_state == "offense":
+        elif self.play_state == "offense" or self.play_state == "defense" or self.play_state == "2pt Attempt":
             result = user_result + comp_result
-            result_string = f"{self.user_team.name} gained {result} yards"
-        elif self.play_state == "defense":
-            result = user_result + comp_result
-            result_string = f"{self.comp_team.name} gained {result*-1} yards"
+            result_string = f"{self.possession.name} gained {result} yards"
+        elif self.play_state == "XP":
+            result = user_result - comp_result
+            result_string = f"XP: Net {result} yards"
+        elif self.play_state == "Field Goal":
+            result = user_result - comp_result
+            result_string = f"Field Goal: {result} yards"
+
         return result, result_string
 
 
@@ -343,6 +418,9 @@ class Game:
             play_outcomes = player.teamsheet.offense[player.selected_play]
         elif(player.selected_play in self.DEFENSE_PLAYS):
             play_outcomes = player.teamsheet.defense[player.selected_play]
+        elif(player.selected_play in self.SP_OFFENSE_PLAYS):
+                play_outcomes = player.teamsheet.special_teams[player.selected_play]
+
 
         return play_outcomes
 
@@ -366,25 +444,44 @@ class Game:
 
         self.update_ball_position(result)
 
-        if self.check_for_touchdown():
+        if self.play_state == "Field Goal":
+            #Check if field goal is good, update score
+            self.handle_fieldgoal(result)
+        elif self.play_state == "XP":
+            self.check_XP(result)
+            self.swap_possession()
+            #self.update_game_direction()
+            self.setup_kickoff()
+        elif self.play_state == "2pt Attempt":
+            self.check_attempt(result)
+            self.swap_possession()
+            self.update_game_direction()
+            self.setup_kickoff()
+        elif self.check_for_touchdown():
             #Display TD, Update game clock only 10 seconds, Update score 
-            #TODO Need to indicate we are in post-td (XP or go for 2) game state 
             self.display_touchdown()
             self.update_game_clock(10)
             self.update_game_score(6)
+            if self.direction == "left":
+                self.ball_position = -48
+            else:
+                self.ball_position = 48
+            self.down = 0
+            self.distance = 0
+            self.play_state = "post_touchdown"
         elif self.play_state == "kickoff":
             self.down = 1
-            self.distance = 10 #TODO what about first and goal?
+            self.set_distance()
             self.update_game_clock(10)
             self.update_game_direction()
             self.transition_from_kickoff()
         elif self.check_for_firstdown(result):
             self.down = 1
-            self.distance = 10 #TODO what about first and goal?
+            self.set_distance()
             self.update_game_clock(40)
         elif self.check_for_turnover_on_downs():
             self.down = 1
-            self.distance = 10      #TODO what about first a goal?
+            self.set_distance()
             self.swap_possession()
             self.update_game_direction()
             self.update_game_clock(10)
@@ -395,12 +492,68 @@ class Game:
         
         #TODO handle end of game/quarter
 
+    def handle_fieldgoal(self, result):
+
+        self.update_game_clock(10)
+        
+        if abs(self.ball_position) > 50:
+            score_message = f'Field Goal is good {self.possession.name}!!!'
+            self.update_game_score(3)
+            self.swap_possession()
+            self.setup_kickoff()
+        else:
+            score_message = f'Field Goal is NO good {self.possession.name}!!!'
+            self.update_ball_position(result * -1) #We need to move the ball back to where the kick happened 
+            self.down = 1
+            self.set_distance()
+            self.update_game_direction()
+            self.swap_possession()
+
+        print(colored(score_message, "cyan"))
+
+
+    def set_distance(self):
+        if self.first_and_goal():
+            self.distance = 50 - abs(self.ball_position)
+        else:
+            self.distance = 10 
+
+
+    def first_and_goal(self):
+        if self.direction == "left" and self.ball_position <= -40:
+            return True
+        elif self.direction == "right" and self.ball_position >= 40:
+            return True
+        else:
+            return False
+    
+    def check_attempt(self, result):
+        if result >= 2:
+            score_message = f'2pt attempt is good {self.possession.name}!!!!!'
+            self.update_game_score(2)
+        else:
+            score_message = f'2pt attempt is no good {self.possession.name}!!!!!'
+            
+        print(colored(score_message, "cyan"))
+
+
+    def check_XP(self, result):
+        if result >= 0:
+            score_message = f'XP is good {self.possession.name}!!!!!'
+            self.update_game_score(1)
+        else:
+            score_message = f'XP is no good {self.possession.name}!!!!!'
+            
+        print(colored(score_message, "cyan"))
+
+
+
 
     def transition_from_kickoff(self):
         if self.play_state == "kickoff" and self.possession == self.user_team:
             self.play_state = "offense"
         elif self.play_state == "kickoff" and self.possession == self.comp_team:
-            self.play_state == "defense"
+            self.play_state = "defense"
 
 
     def update_game_direction(self):
@@ -482,7 +635,7 @@ def main():
     game.start_phase("atlanta_falcons", "dallas_cowboys")
 
     i = 0
-    while(i<20):
+    while(i<40):
 
         game.pre_play_phase()
         result = game.evaluate_play_phase()
@@ -490,4 +643,5 @@ def main():
 
         i = i + 1
 
-main()
+if __name__ == "__main__":
+    main()
