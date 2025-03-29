@@ -5,7 +5,7 @@ import yaml
 import os
 from termcolor import colored
 import random
-
+from gui import FootballField
 
 
 class Playsheet:
@@ -237,9 +237,9 @@ class Game:
                 comp_play = random.choice(Game.POST_TD_PLAYS)
                 if comp_play == "XP":
                     self.play_state = "XP"
-                    plays = "Field Goal"
                     self.user_team.selected_play = "Field Goal"
                     self.comp_team.selected_play = "Field Goal"
+                    return
                 elif comp_play == "2pt Attempt":
                     self.play_state = "2pt Attempt"
                     print(f"{self.possession.name} are going for 2")
@@ -372,7 +372,10 @@ class Game:
             result = user_result + comp_result
             result_string = f"{self.possession.name} gained {result} yards"
         elif self.play_state == "XP":
-            result = user_result - comp_result
+            if self.possession == self.user_team:
+                result = user_result - comp_result
+            else:
+                result = comp_result - user_result
             result_string = f"XP: Net {result} yards"
         elif self.play_state == "Field Goal":
             result = user_result - comp_result
@@ -633,6 +636,16 @@ def main():
 
     game = Game()
     game.start_phase("atlanta_falcons", "dallas_cowboys")
+
+    # Initialize pygame and create screen
+    WIDTH  = 800
+    HEIGHT = 600
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    pygame.display.set_caption("Paydirt Football")
+    
+    # Create field visualization
+    #field = FootballField(screen, 800, 400)
 
     i = 0
     while(i<40):
