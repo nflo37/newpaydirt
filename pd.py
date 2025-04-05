@@ -460,6 +460,14 @@ class Game:
             self.swap_possession()
             self.update_game_direction()
             self.setup_kickoff()
+        elif self.play_state == "kickoff":
+            self.down = 1
+            self.set_distance()
+            self.update_game_clock(10)
+            self.update_game_direction()
+            self.transition_from_kickoff()
+            if self.check_for_touchback():
+                return
         elif self.check_for_touchdown():
             #Display TD, Update game clock only 10 seconds, Update score 
             self.display_touchdown()
@@ -472,12 +480,6 @@ class Game:
             self.down = 0
             self.distance = 0
             self.play_state = "post_touchdown"
-        elif self.play_state == "kickoff":
-            self.down = 1
-            self.set_distance()
-            self.update_game_clock(10)
-            self.update_game_direction()
-            self.transition_from_kickoff()
         elif self.check_for_firstdown(result):
             self.down = 1
             self.set_distance()
@@ -591,6 +593,16 @@ class Game:
         else:
             return False
 
+    def check_for_touchback(self):
+        if self.ball_position <= -50 and self.direction == "left":
+            return True
+            self.ball_position = -25
+        elif self.ball_position >= 50 and self.direction == "right":
+            return True
+            self.ball_position = 25
+        else:
+            return False
+
     def check_for_firstdown(self, result):
         if result >= self.distance:
             return True
@@ -645,16 +657,21 @@ def main():
     pygame.display.set_caption("Paydirt Football")
     
     # Create field visualization
-    #field = FootballField(screen, 800, 400)
+    field = FootballField(screen, WIDTH, HEIGHT)
 
-    i = 0
-    while(i<40):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
 
         game.pre_play_phase()
         result = game.evaluate_play_phase()
         game.post_play_phase(result)
-
-        i = i + 1
+        
+        # Update the visual display
+        field.draw(game)
+        pygame.time.wait(100)  # Small delay to make the game playable
 
 if __name__ == "__main__":
     main()
